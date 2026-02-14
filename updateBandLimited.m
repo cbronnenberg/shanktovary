@@ -2,8 +2,13 @@ function updateBandLimited(app)
 
     parent = app.BandPanel;
     delete(parent.Children);
+    ax = axes('Parent', parent);
+    hold(ax,'on');
 
-    hold(parent,'on');
+    app.BandAxesHandle = ax;
+    app.BandLineHandles = gobjects(nBands, 2);
+    app.BandNames = bandNames;
+
 
     compareMode = app.CompareFiltersCheckBox.Value && ...
                   ~isempty(app.ASignals) && ~isempty(app.BSignals);
@@ -35,6 +40,11 @@ function updateBandLimited(app)
             dB = app.bandLimitedDisp(aF, fs, t, f1, f2);
             rmsA(k) = rms(dB);
 
+            stats(k).rms  = rms(dB);
+            stats(k).max  = max(dB);
+            stats(k).min  = min(dB);
+            stats(k).mean = mean(dB);
+
             switch mode
                 case 'Offset'
                     offset = (k-1)*max(abs(dB))*2;
@@ -45,12 +55,14 @@ function updateBandLimited(app)
                     y = dB ./ max(abs(dB));
             end
 
-            plot(parent, t, y, 'LineWidth',1.1);
+            plot(ax, t, y, 'LineWidth',1.1);
         end
 
-        title(parent,'Band-Limited Displacement (Current Filter)');
-        xlabel(parent,'Time (s)');
-        ylabel(parent,'Offset / Norm Disp');
+        title(ax,'Band-Limited Displacement (Current Filter)');
+        xlabel(ax,'Time (s)');
+        ylabel(ax,'Offset / Norm Disp');
+        legend(ax, bandNames, 'Location','eastoutside');
+
 
     else
         % Compare mode: A and B in same layout
@@ -66,6 +78,16 @@ function updateBandLimited(app)
             rmsA(k) = rms(dA);
             rmsB(k) = rms(dB);
 
+            statsA(k).rms  = rms(dA);
+            statsA(k).max  = max(dA);
+            statsA(k).min  = min(dA);
+            statsA(k).mean = mean(dA);
+
+            statsB(k).rms  = rms(dB);
+            statsB(k).max  = max(dB);
+            statsB(k).min  = min(dB);
+            statsB(k).mean = mean(dB);
+
             switch mode
                 case 'Offset'
                     M = max([abs(dA); abs(dB)]);
@@ -80,13 +102,13 @@ function updateBandLimited(app)
                     yB = dB ./ max(abs(dB));
             end
 
-            plot(parent, t, yA, 'Color',[0 0 0.7],'LineWidth',1.1);
-            plot(parent, t, yB, 'Color',[0.8 0 0],'LineWidth',1.1);
+            plot(ax, t, yA, 'Color', colors(k,:),'LineWidth',1.1, 'LineStyle','-');
+            plot(ax, t, yB, 'Color', colors(k,:),'LineWidth',1.1, 'LineStyle','--');
         end
 
-        title(parent,'Band-Limited Displacement (A vs B)');
-        xlabel(parent,'Time (s)');
-        ylabel(parent,'Offset / Norm Disp');
+        title(ax,'Band-Limited Displacement (A vs B)');
+        xlabel(ax,'Time (s)');
+        ylabel(ax,'Offset / Norm Disp');
     end
 
     if ~compareMode
@@ -97,14 +119,28 @@ function updateBandLimited(app)
             'VariableNames', {'Band','RMS_A','RMS_B'});
     end
 
-    % Optional: highlight dominant band in title
+    % highlight dominant band in title
     [~, idxMax] = max(rmsA, [], 'omitnan');
     if ~isempty(idxMax) && ~isnan(idxMax)
         domLabel = bandNames(idxMax);
-        title(parent, sprintf('%s | Dominant: %s', parent.Title.String, domLabel));
+        title(ax, sprintf('%s | Dominant: %s', parent.Title.String, domLabel));
     end
 
-    hold(parent,'off');
+    hold(ax,'off');
+
+    lines = {};
+    for k = 1:nBands
+        if ~compareMode
+            lines{end+1} = sprintf('%s: RMS=%.3g, Max=%.3g, Min=%.3g, Mean=%.3g', ...
+                bandNames(k), stats(k).rms, stats(k).max, stats(k).min, stats(k).mean);
+        else
+            lines{end+1} = sprintf('%s: A[RMS=%.3g] B[RMS=%.3g] Δ=%.3g', ...
+                bandNames(k), statsA(k).rms, statsB(k).rms, ...
+                statsB(k).rms - statsA(k).rms);
+        end
+    end
+    app.BandStatsTextArea.Value = lines;
+
 
 
 end
