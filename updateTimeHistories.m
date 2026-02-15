@@ -3,12 +3,15 @@ function updateTimeHistories(app)
     parent = app.TimePanel;
     delete(parent.Children);
 
+    % Create tiled layout
     tl = tiledlayout(parent,3,1,'TileSpacing','compact','Padding','compact');
 
+    % Toggles
     showA = app.ShowAccelCheckBox.Value;
     showV = app.ShowVelocityCheckBox.Value;
     showD = app.ShowDisplacementCheckBox.Value;
 
+    % Compare mode
     compareMode = app.CompareFiltersCheckBox.Value && ...
                   ~isempty(app.ASignals) && ~isempty(app.BSignals);
 
@@ -60,9 +63,17 @@ function updateTimeHistories(app)
     ylabel(axD,'Disp');
     xlabel(axD,'Time (s)');
 
+    % Link axes
     linkaxes([axA axV axD],'x');
+
+    % Enable zoom/pan/cursor interactivity
     enableDefaultInteractivity(axA);
     enableDefaultInteractivity(axV);
     enableDefaultInteractivity(axD);
+
+    % Store handles for cursor readouts, etc.
+    app.TimeAxes.Accel = axA;
+    app.TimeAxes.Vel   = axV;
+    app.TimeAxes.Disp  = axD;
 
 end
