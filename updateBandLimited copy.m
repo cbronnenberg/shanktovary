@@ -102,8 +102,7 @@ colors = lines(nBands);   % one color per band
             statsA(k).min  = min(dA);
             statsA(k).mean = mean(dA);
 
-            statsB(k).rms  = rms(dB);
-            statsB(k).max  = max(dB);
+            statsB(k).rms  = rms(dB);            statsB(k).max  = max(dB);
             statsB(k).min  = min(dB);
             statsB(k).mean = mean(dB);
 
