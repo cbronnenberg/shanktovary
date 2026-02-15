@@ -1,52 +1,149 @@
-% Inside AccelerometersSectionPanel
-app.AccelTable = uitable(app.AccelerometersSectionPanel, ...
+%% ACCELEROMETERS SECTION
+accelGrid = uigridlayout(app.AccelContentPanel, [2 1]);
+accelGrid.RowHeight = {'1x','fit'};
+accelGrid.ColumnWidth = {'1x'};
+accelGrid.Padding = [0 0 0 0];
+accelGrid.RowSpacing = 4;
+
+% Table
+app.AccelTable = uitable(accelGrid, ...
     'ColumnName', {'Select','Name','Axis','Invert'}, ...
     'ColumnEditable', [true false true true], ...
     'ColumnFormat', {'logical','char',{'X','Y','Z'},'logical'}, ...
     'Data', {}, ...
     'RowStriping', 'on');
+app.AccelTable.Layout.Row = 1;
+
+% Buttons row
+accelBtnGrid = uigridlayout(accelGrid, [1 3]);
+accelBtnGrid.ColumnWidth = {'1x','1x','1x'};
+accelBtnGrid.Padding = [0 0 0 0];
+accelBtnGrid.Layout.Row = 2;
+
+app.ReloadButton = uibutton(accelBtnGrid, 'Text','Reload');
+app.SelectAllButton = uibutton(accelBtnGrid, 'Text','Select All');
+app.ClearAllButton = uibutton(accelBtnGrid, 'Text','Clear All');
+
+%% TIME SEGMENTS SECTION
+timeGrid = uigridlayout(app.TimeContentPanel, [4 2]);
+timeGrid.RowHeight = {'fit','fit','fit','fit'};
+timeGrid.ColumnWidth = {'fit','1x'};
+timeGrid.Padding = [0 0 0 0];
+timeGrid.RowSpacing = 4;
+
+% Start time
+uilabel(timeGrid, 'Text','Start Time:', 'HorizontalAlignment','left');
+app.StartTimeField = uieditfield(timeGrid, 'numeric');
+
+% End time
+uilabel(timeGrid, 'Text','End Time:', 'HorizontalAlignment','left');
+app.EndTimeField = uieditfield(timeGrid, 'numeric');
+
+% Checkboxes (Accel / Vel / Disp)
+app.ShowAccelCheckBox = uicheckbox(timeGrid, 'Text','Show Accel', 'Value',true);
+app.ShowAccelCheckBox.Layout.Column = [1 2];
+
+app.ShowVelocityCheckBox = uicheckbox(timeGrid, 'Text','Show Velocity', 'Value',true);
+app.ShowVelocityCheckBox.Layout.Column = [1 2];
+
+app.ShowDisplacementCheckBox = uicheckbox(timeGrid, 'Text','Show Displacement', 'Value',true);
+app.ShowDisplacementCheckBox.Layout.Column = [1 2];
+
+% Apply button
+app.ApplySegmentButton = uibutton(timeGrid, 'Text','Apply Segment');
+app.ApplySegmentButton.Layout.Row = 4;
+app.ApplySegmentButton.Layout.Column = [1 2];
 
 
-uicontrol(app.TimeSegmentSectionPanel, 'Style','text', ...
-    'String','Start Time:', 'HorizontalAlignment','left');
+%% RELATIVE PAIRS SECTION
+pairsGrid = uigridlayout(app.RelativePairsContentPanel, [3 1]);
+pairsGrid.RowHeight = {'1x','fit','fit'};
+pairsGrid.ColumnWidth = {'1x'};
+pairsGrid.Padding = [0 0 0 0];
+pairsGrid.RowSpacing = 4;
 
-app.StartTimeField = uieditfield(app.TimeSegmentSectionPanel, 'numeric');
-
-uicontrol(app.TimeSegmentSectionPanel, 'Style','text', ...
-    'String','End Time:', 'HorizontalAlignment','left');
-
-app.EndTimeField = uieditfield(app.TimeSegmentSectionPanel, 'numeric');
-
-app.ApplySegmentButton = uibutton(app.TimeSegmentSectionPanel, ...
-    'Text','Apply Segment');
-
-
-app.PairTable = uitable(app.RelativePairsSectionPanel, ...
+% Table
+app.PairTable = uitable(pairsGrid, ...
     'ColumnName', {'A','B'}, ...
     'ColumnEditable', [false false], ...
     'Data', {});
+app.PairTable.Layout.Row = 1;
 
-app.AddPairButton = uibutton(app.RelativePairsSectionPanel, ...
-    'Text','Add Pair');
+% Buttons row
+pairBtnGrid = uigridlayout(pairsGrid, [1 2]);
+pairBtnGrid.ColumnWidth = {'1x','1x'};
+pairBtnGrid.Padding = [0 0 0 0];
+pairBtnGrid.Layout.Row = 2;
 
-app.SwapPairButton = uibutton(app.RelativePairsSectionPanel, ...
-    'Text','Swap A/B');
+app.AddPairButton = uibutton(pairBtnGrid, 'Text','Add Pair');
+app.SwapPairButton = uibutton(pairBtnGrid, 'Text','Swap A/B');
+
+% Compare checkbox
+app.CompareFiltersCheckBox = uicheckbox(pairsGrid, ...
+    'Text','Compare A/B Filters', 'Value',false);
+app.CompareFiltersCheckBox.Layout.Row = 3;
 
 
-app.BandTable = uitable(app.BandSectionPanel, ...
+%% ACCEL INFO SECTION
+infoGrid = uigridlayout(app.AccelInfoContentPanel, [4 2]);
+infoGrid.RowHeight = {'fit','fit','fit','fit'};
+infoGrid.ColumnWidth = {'fit','1x'};
+infoGrid.Padding = [0 0 0 0];
+infoGrid.RowSpacing = 4;
+
+uilabel(infoGrid, 'Text','Sensitivity:');
+app.SensitivityField = uieditfield(infoGrid, 'numeric');
+
+uilabel(infoGrid, 'Text','Units:');
+app.UnitsField = uieditfield(infoGrid, 'text');
+
+uilabel(infoGrid, 'Text','Calibration Date:');
+app.CalibrationField = uieditfield(infoGrid, 'text');
+
+uilabel(infoGrid, 'Text','Notes:');
+app.AccelNotesField = uieditfield(infoGrid, 'text');
+
+
+%% BAND SETTINGS SECTION
+bandGrid = uigridlayout(app.BandContentPanel, [3 2]);
+bandGrid.RowHeight = {'fit','1x','fit'};
+bandGrid.ColumnWidth = {'fit','1x'};
+bandGrid.Padding = [0 0 0 0];
+bandGrid.RowSpacing = 4;
+
+% Band start/end fields
+uilabel(bandGrid, 'Text','Start (Hz):');
+app.BandStartField = uieditfield(bandGrid, 'numeric');
+
+uilabel(bandGrid, 'Text','End (Hz):');
+app.BandEndField = uieditfield(bandGrid, 'numeric');
+
+% Table (spans both columns)
+app.BandTable = uitable(bandGrid, ...
     'ColumnName', {'Start (Hz)','End (Hz)'}, ...
     'ColumnEditable', [true true], ...
     'Data', {});
+app.BandTable.Layout.Row = 2;
+app.BandTable.Layout.Column = [1 2];
 
-app.AddBandButton = uibutton(app.BandSectionPanel, ...
-    'Text','Add Band');
+% Buttons row
+bandBtnGrid = uigridlayout(bandGrid, [1 2]);
+bandBtnGrid.ColumnWidth = {'1x','1x'};
+bandBtnGrid.Padding = [0 0 0 0];
+bandBtnGrid.Layout.Row = 3;
+bandBtnGrid.Layout.Column = [1 2];
 
-app.DeleteBandButton = uibutton(app.BandSectionPanel, ...
-    'Text','Delete Band');
+app.AddBandButton = uibutton(bandBtnGrid, 'Text','Add Band');
+app.DeleteBandButton = uibutton(bandBtnGrid, 'Text','Delete Band');
 
 
-app.RunBatchButton = uibutton(app.BatchSectionPanel, ...
-    'Text','Run Batch');
+%% BATCH PROCESSING SECTION
+batchGrid = uigridlayout(app.BatchContentPanel, [1 1]);
+batchGrid.RowHeight = {'fit'};
+batchGrid.ColumnWidth = {'1x'};
+batchGrid.Padding = [0 0 0 0];
+
+app.RunBatchButton = uibutton(batchGrid, 'Text','Run Batch');
 
 
     % FILE MENU
