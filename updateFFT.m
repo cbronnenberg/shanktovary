@@ -1,46 +1,15 @@
 function updateFFTPlot(app)
-%UPDATEFFTPLOT  Refresh the FFT plot in the app.
 
-%% Startup guards
-if isempty(app) || ~isvalid(app)
-    return
-end
-if isempty(app.FFTPanel) || ~isvalid(app.FFTPanel)
-    return
-end
-if isempty(app.curSignals) || isempty(app.curSignals.Amp)
-    return
-end
+    parent = app.FFTPanel;
+    delete(parent.Children);
 
-%% Read UI state
-compareMode = app.CompareFiltersCheckBox.Value && ...
-              ~isempty(app.ASignals) && ~isempty(app.BSignals);
+    tl = tiledlayout(parent,1,1);
+    ax = nexttile(tl);
 
-%% Clear only axes/tiledlayouts
-delete(findall(app.FFTPanel, 'Type', 'axes'));
-delete(findall(app.FFTPanel, 'Type', 'tiledlayout'));
+    [f, mag] = computeFFT(app, app.curSignals.aF, app.t);
 
-%% Create layout
-tl = tiledlayout(app.FFTPanel, 1, 1, ...
-    'TileSpacing', 'compact', ...
-    'Padding', 'compact');
+    plot(ax, f, mag, 'b', 'LineWidth',1.1);
 
-ax = nexttile(tl);
-
-%% Plot
-if ~compareMode
-    plot(ax, app.curSignals.f, app.curSignals.Amp, 'k');
-    title(ax, 'FFT Amplitude');
-else
-    plot(ax, app.ASignals.f, app.ASignals.Amp, 'k', ...
-             app.BSignals.f, app.BSignals.Amp, 'r');
-    title(ax, 'FFT Amplitude (A vs B)');
-    legend(ax, {'A','B'});
-end
-
-xlabel(ax, 'Frequency (Hz)');
-ylabel(ax, 'Amplitude');
-grid(ax, 'on');
-enableDefaultInteractivity(ax);
+    applyPlotStyle(app, ax, 'FFT Magnitude', 'Frequency (Hz)', '|FFT|', {'Accel'});
 
 end
