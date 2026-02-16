@@ -38,3 +38,50 @@ function updateSpectrogram(app)
         linkaxes([ax1 ax2],'x');
     end
 end
+
+function updateSpectrogramPlot2(app)
+%UPDATESPECTROGRAMPLOT  Refresh the spectrogram plot.
+
+%% Startup guards
+if isempty(app) || ~isvalid(app)
+    return
+end
+if isempty(app.SpectrogramPanel) || ~isvalid(app.SpectrogramPanel)
+    return
+end
+if isempty(app.curSignals) || isempty(app.curSignals.aF)
+    return
+end
+
+%% Clear only axes/tiledlayouts
+delete(findall(app.SpectrogramPanel, 'Type', 'axes'));
+delete(findall(app.SpectrogramPanel, 'Type', 'tiledlayout'));
+
+%% Create layout
+tl = tiledlayout(app.SpectrogramPanel, 1, 1, ...
+    'TileSpacing', 'compact', ...
+    'Padding', 'compact');
+
+ax = nexttile(tl);
+
+%% Compute spectrogram
+x = app.curSignals.aF;
+fs = app.SampleRate;
+
+window = hann(512);
+noverlap = 256;
+nfft = 1024;
+
+[s,f,t] = spectrogram(x, window, noverlap, nfft, fs);
+
+%% Plot
+imagesc(ax, t, f, 20*log10(abs(s)));
+axis(ax, 'xy');
+colormap(ax, jet);
+colorbar(ax);
+
+xlabel(ax, 'Time (s)');
+ylabel(ax, 'Frequency (Hz)');
+title(ax, 'Spectrogram');
+
+end
