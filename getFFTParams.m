@@ -1,8 +1,12 @@
-function [win, overlap, Nfft] = getFFTParams(app)
-    Nfft = app.FFTSizeDropDown.Value;
-    winPct = app.WindowPercentField.Value / 100;
-    ovlPct = app.OverlapPercentField.Value / 100;
+function params = getFFTParams(app)
 
-    win = hamming(round(Nfft * winPct));
-    overlap = round(length(win) * ovlPct);
+    params = struct( ...
+        'Nfft',          app.Nfft, ...
+        'WindowLength',  app.WindowLength, ...
+        'OverlapLength', app.OverlapLength, ...
+        'WindowPct',     app.WindowPct, ...
+        'OverlapPct',    app.OverlapPct );
 end
+
+
+
