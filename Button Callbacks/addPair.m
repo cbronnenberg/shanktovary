@@ -8,6 +8,7 @@ function addPair(app)
         app.PairBList = {};
     end
 
+    
     % Get selected accelerometers
     sel = app.AccelTable.Selection;
     if numel(sel) ~= 2
