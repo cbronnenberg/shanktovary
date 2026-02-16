@@ -1,4 +1,4 @@
-function swapPair(app)
+function removePair(app)
 
     sel = app.PairTable.Selection;
     if isempty(sel)
@@ -7,9 +7,8 @@ function swapPair(app)
 
     row = sel(1);
 
-    tmp = app.PairAList{row};
-    app.PairAList{row} = app.PairBList{row};
-    app.PairBList{row} = tmp;
+    app.PairAList(row) = [];
+    app.PairBList(row) = [];
 
     app.PairTable.Data = [app.PairAList(:), app.PairBList(:)];
 

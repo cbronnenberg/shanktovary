@@ -25,24 +25,46 @@ function updatePSDPlot(app)
     sigV = app.curSignals.v;
     sigD = app.curSignals.d;
 
-    % Helper for PSD
-    function [f,P] = psd(x)
-        [P,f] = pwelch(x, hamming(2048), 1024, 2048, fs);
+    p = app.getFFTParams();
+    window   = p.Window;
+    overlap  = p.OverlapLength;
+    nfft     = p.Nfft;
+
+    % Helper
+    function [f,P,cRMS] = computePSD(x)
+        [P,f] = pwelch(x, window, overlap, nfft, fs);
+        df = f(2)-f(1);
+        cRMS = sqrt(cumsum(P)*df);
     end
 
-    % Accel PSD
-    [fA,PA] = psd(sigA);
-    nexttile(tl); plot(fA, PA); grid on; title('Accel PSD');
-    nexttile(tl); plot(fA, cumsum(PA)); grid on; title('Accel Cum RMS');
+    % --- Accel PSD ---
+    [fA,PA,cA] = computePSD(sigA);
+    ax = nexttile(tl);
+    plot(ax, fA, PA);
+    app.applyPlotStyle(ax, 'Accel PSD', 'Frequency (Hz)', 'PSD', {'Accel'});
 
-    % Vel PSD
-    [fV,PV] = psd(sigV);
-    nexttile(tl); plot(fV, PV); grid on; title('Vel PSD');
-    nexttile(tl); plot(fV, cumsum(PV)); grid on; title('Vel Cum RMS');
+    ax = nexttile(tl);
+    plot(ax, fA, cA);
+    app.applyPlotStyle(ax, 'Accel Cumulative RMS', 'Frequency (Hz)', 'RMS', {'Accel'});
 
-    % Disp PSD
-    [fD,PD] = psd(sigD);
-    nexttile(tl); plot(fD, PD); grid on; title('Disp PSD');
-    nexttile(tl); plot(fD, cumsum(PD)); grid on; title('Disp Cum RMS');
+    % --- Velocity PSD ---
+    [fV,PV,cV] = computePSD(sigV);
+    ax = nexttile(tl);
+    plot(ax, fV, PV);
+    app.applyPlotStyle(ax, 'Velocity PSD', 'Frequency (Hz)', 'PSD', {'Velocity'});
+
+    ax = nexttile(tl);
+    plot(ax, fV, cV);
+    app.applyPlotStyle(ax, 'Velocity Cumulative RMS', 'Frequency (Hz)', 'RMS', {'Velocity'});
+
+    % --- Displacement PSD ---
+    [fD,PD,cD] = computePSD(sigD);
+    ax = nexttile(tl);
+    plot(ax, fD, PD);
+    app.applyPlotStyle(ax, 'Displacement PSD', 'Frequency (Hz)', 'PSD', {'Displacement'});
+
+    ax = nexttile(tl);
+    plot(ax, fD, cD);
+    app.applyPlotStyle(ax, 'Displacement Cumulative RMS', 'Frequency (Hz)', 'RMS', {'Displacement'});
 
 end

@@ -18,18 +18,26 @@ function updateSpectrogramPlot(app)
     tl.Padding = 'compact';
     tl.TileSpacing = 'compact';
 
-    nexttile(tl);
+    ax = nexttile(tl);
 
     t = app.t;
     fs = 1/mean(diff(t));
     sig = app.curSignals.aF;
 
-    window = hamming(512);
-    noverlap = 256;
-    nfft = 1024;
+    p = app.getFFTParams();
+    window   = p.Window;
+    overlap  = p.OverlapLength;
+    nfft     = p.Nfft;
 
-    spectrogram(sig, window, noverlap, nfft, fs, 'yaxis');
-    title('Spectrogram');
-    colorbar;
+    % Spectrogram
+    spectrogram(sig, window, overlap, nfft, fs, 'yaxis', 'Parent', ax);
+
+    title(ax, 'Spectrogram');
+    ylabel(ax, 'Frequency (Hz)');
+    xlabel(ax, 'Time (s)');
+    colorbar(ax);
+
+    % Metadata overlay
+    app.addAccelInfoOverlay(ax);
 
 end

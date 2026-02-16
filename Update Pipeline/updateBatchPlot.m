@@ -18,13 +18,12 @@ function updateBatchPlot(app)
     tl.Padding = 'compact';
     tl.TileSpacing = 'compact';
 
-    nexttile(tl);
-    title('Batch Processing Results');
-    xlabel('Frequency (Hz)');
-    ylabel('Magnitude');
-    grid on;
+    ax = nexttile(tl);
 
-    % Placeholder until batch engine is implemented
-    text(0.5,0.5,'Batch plots will appear here','HorizontalAlignment','center');
+    text(ax, 0.5, 0.5, 'Batch processing results will appear here', ...
+        'HorizontalAlignment','center', ...
+        'FontSize',12);
+
+    app.applyPlotStyle(ax, 'Batch Processing', '', '', {});
 
 end

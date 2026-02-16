@@ -6,7 +6,7 @@ function updateFFTPlot(app)
 
     parent = app.FFTPanel;
 
-    % Delete graphics children only
+    % Clear graphics
     kids = parent.Children;
     for k = 1:numel(kids)
         if isa(kids(k),'matlab.graphics.Graphics') || isa(kids(k),'matlab.graphics.layout.TiledChartLayout')
@@ -18,32 +18,34 @@ function updateFFTPlot(app)
     tl.Padding = 'compact';
     tl.TileSpacing = 'compact';
 
-    nexttile(tl);
-    hold on;
+    ax = nexttile(tl);
 
     t = app.t;
     fs = 1/mean(diff(t));
+    sig = app.curSignals.aF;
 
-    % FFT of current signal
-    aF = app.curSignals.aF;
-    N = numel(aF);
+    p = app.getFFTParams();
+    N = p.Nfft;
+
+    % FFT
+    A = abs(fft(sig, N));
     f = (0:N-1)*(fs/N);
-    A = abs(fft(aF));
 
-    plot(f, A, 'b', 'LineWidth',1.1);
+    plot(ax, f, A, 'b', 'LineWidth',1.1);
+    legendEntries = {'Accel'};
 
     % A/B compare
     if app.CompareFiltersCheckBox.Value && ~isempty(app.ASignals) && ~isempty(app.BSignals)
-        A_A = abs(fft(app.ASignals.aF));
-        A_B = abs(fft(app.BSignals.aF));
-        plot(f, A_A, 'r', 'LineWidth',1.1);
-        plot(f, A_B, 'g', 'LineWidth',1.1);
+        A_A = abs(fft(app.ASignals.aF, N));
+        A_B = abs(fft(app.BSignals.aF, N));
+        hold(ax,'on');
+        plot(ax, f, A_A, 'r', 'LineWidth',1.1);
+        plot(ax, f, A_B, 'g', 'LineWidth',1.1);
+        legendEntries = {'Accel','A','B'};
     end
 
-    xlim([0 fs/2]);
-    xlabel('Frequency (Hz)');
-    ylabel('|FFT|');
-    title('FFT Magnitude');
-    grid on;
+    xlim(ax, [0 fs/2]);
+
+    app.applyPlotStyle(ax, 'FFT Magnitude', 'Frequency (Hz)', '|FFT|', legendEntries);
 
 end
