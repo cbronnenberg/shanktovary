@@ -1,11 +1,7 @@
 function updateAccelInfo(app)
-% UPDATEACCELINFO
-% Updates the Accel Info panel fields based on the selected accelerometer.
 
     sel = app.AccelTable.Selection;
-
     if isempty(sel)
-        % Clear fields if nothing selected
         app.AccelNameField.Value = '';
         app.AxisField.Value      = '';
         app.InvertCheckBox.Value = false;
@@ -13,11 +9,10 @@ function updateAccelInfo(app)
     end
 
     row = sel(1);
-
     data = app.AccelTable.Data;
 
-    app.AccelNameField.Value = data{row,1};
-    app.AxisField.Value      = data{row,2};
-    app.InvertCheckBox.Value = data{row,3};
+    app.AccelNameField.Value = data{row,2};   % Name
+    app.AxisField.Value      = data{row,3};   % Axis
+    app.InvertCheckBox.Value = data{row,4};   % Invert
 
 end
