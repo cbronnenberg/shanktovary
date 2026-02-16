@@ -1,21 +1,28 @@
 function setCurrentSignalFromIndex(app, idx)
-% helper function to set the current signal based on the index of the selected accelerometer
+
     if isempty(app.AccelSignals) || idx < 1 || idx > numel(app.AccelSignals)
         return;
     end
 
-    raw = app.AccelSignals{idx}; % Convert to in/s^2 for internal processing
-    aF = app.convertAccelUnitsToInternal(raw);
-    
-    sig = app.AccelSignals{idx};
-    t   = app.t;
+    raw = app.AccelSignals{idx};
 
-    v = cumtrapz(t, sig);
+    % Convert to US units for internal processing
+    aF = convertAccelUnitsToInternal(app, raw);
+
+    t = app.t;
+
+    % Integrate
+    v = cumtrapz(t, aF);
     d = cumtrapz(t, v);
 
+    % Store internal signals
     app.curSignals = struct( ...
-        'aF', sig, ...
+        'aF', aF, ...
         'v',  v, ...
         'd',  d);
+
+    % --- NEW: Auto‑populate time segment fields ---
+    app.StartTimeField.Value = t(1);
+    app.EndTimeField.Value   = t(end);
 
 end

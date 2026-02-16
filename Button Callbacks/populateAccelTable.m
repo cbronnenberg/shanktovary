@@ -1,12 +1,22 @@
-function populateAccelTable(app, accelList)
+function populateAccelTable(app, accelNames)
+% POPULATEACCELTABLE
+% Populates the accelerometer table with names and default metadata.
 
-    n = numel(accelList);
+    if isempty(app.AccelTable) || ~isvalid(app.AccelTable)
+        return;
+    end
 
-    % Default table values
-    selectCol = num2cell(false(n,1));
-    axisCol   = repmat({'Z'}, n, 1);
-    invertCol = num2cell(false(n,1));
+    n = numel(accelNames);
 
-    app.AccelTable.Data = [selectCol, accelList(:), axisCol, invertCol];
+    % Default columns: Name | Axis | Invert
+    data = cell(n, 3);
+
+    for i = 1:n
+        data{i,1} = accelNames{i};   % Name
+        data{i,2} = 'Z';             % Default axis
+        data{i,3} = false;           % Default invert
+    end
+
+    app.AccelTable.Data = data;
 
 end
