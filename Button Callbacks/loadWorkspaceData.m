@@ -1,46 +1,64 @@
 function data = loadWorkspaceData(app)
+% LOADWORKSPACEDATA
+% Loads time vector (t or Time) and accelerometer signals (acc_*)
+% from the base workspace.
 
-    data = struct('t',[], 'accelList',{}, 'accelSignals',{});
+    % --- SAFE STRUCT INITIALIZATION ---
+    data = struct( ...
+        't', [], ...
+        'accelList', {{}}, ...
+        'accelSignals', {{}} );
 
+    % Debug: show what the app sees
     vars = evalin('base','whos');
     varNames = {vars.name};
 
-    % Debug print
-    fprintf('Variables in base workspace: \n');
-    disp(varNames);
-
-    % --- Find time vector ---
-    if ~ismember('t', varNames)
+    % --- Time vector detection ---
+    if ismember('t', varNames)
+        timeVar = 't';
+    elseif ismember('Time', varNames)
+        timeVar = 'Time';
+    else
         uialert(app.UIFigure, ...
-            'Variable ''t'' not found in the BASE workspace. Make sure your data is loaded into base.', ...
+            'No time vector ''t'' or ''Time'' found in BASE workspace.', ...
             'Missing Time Vector');
         return;
     end
 
-    data.t = evalin('base','t');
-    data.t = data.t(:);
+    t = evalin('base', timeVar);
+    t = t(:);
+    data.t = t;
 
-    % --- Find accelerometer signals ---
+    % --- Accelerometer detection ---
     accelNames = {};
     accelSignals = {};
 
     for k = 1:numel(vars)
-        v = vars(k);
+        name = vars(k).name;
 
-        if strcmp(v.name,'t')
+        if strcmp(name, timeVar)
             continue;
         end
 
-        if v.size(1) == numel(data.t) || v.size(2) == numel(data.t)
-            accelNames{end+1} = v.name;
-            accelSignals{end+1} = evalin('base', v.name);
+        if ~startsWith(name, 'acc_')
+            continue;
         end
+
+        sig = evalin('base', name);
+        sig = sig(:);
+
+        if numel(sig) ~= numel(t)
+            continue;
+        end
+
+        accelNames{end+1} = name;
+        accelSignals{end+1} = sig;
     end
 
     if isempty(accelNames)
         uialert(app.UIFigure, ...
-            'No accelerometer signals found matching length of t.', ...
-            'Missing Signals');
+            'No acc_* signals matching length of t found.', ...
+            'Missing Accelerometers');
         return;
     end
 
