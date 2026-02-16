@@ -1,113 +1,132 @@
 function updateTimeHistories(app)
+%UPDATETIMEHISTORIES  Safely refresh the time‑domain plots in the app.
+%
+%   This version is designed to live OUTSIDE the .mlapp file.
+%   It assumes:
+%       - app.TimeHistoryPanel is a PUBLIC property
+%       - app.ShowAccelCheckBox, ShowVelocityCheckBox, ShowDisplacementCheckBox
+%         are PUBLIC properties
+%       - app.NormalizeCheckBox is PUBLIC
+%       - app.curSignals, app.ASignals, app.BSignals exist
+%       - app.t exists
 
-    parent = app.TimePanel;
-    delete(parent.Children);
+%% ------------------------------------------------------------------------
+%  1. Startup Guards (prevent early firing)
+% -------------------------------------------------------------------------
+if isempty(app) || ~isvalid(app)
+    return
+end
 
-    % Create tiled layout
-    tl = tiledlayout(parent,3,1,'TileSpacing','compact','Padding','compact');
+% If UI controls are not yet created, bail out
+if isempty(app.ShowAccelCheckBox) || ~isvalid(app.ShowAccelCheckBox)
+    return
+end
 
-    % Toggles
-    showA = app.ShowAccelCheckBox.Value;
-    showV = app.ShowVelocityCheckBox.Value;
-    showD = app.ShowDisplacementCheckBox.Value;
+if isempty(app.TimeHistoryPanel) || ~isvalid(app.TimeHistoryPanel)
+    return
+end
 
-    % Compare mode
-    compareMode = app.CompareFiltersCheckBox.Value && ...
-                  ~isempty(app.ASignals) && ~isempty(app.BSignals);
+%% ------------------------------------------------------------------------
+%  2. Read UI State
+% -------------------------------------------------------------------------
+showA = app.ShowAccelCheckBox.Value;
+showV = app.ShowVelocityCheckBox.Value;
+showD = app.ShowDisplacementCheckBox.Value;
 
-    t = app.t;
+compareMode = app.CompareFiltersCheckBox.Value && ...
+              ~isempty(app.ASignals) && ~isempty(app.BSignals);
 
-    % ---------------- Acceleration ----------------
-    axA = nexttile(tl);
-    if showA
-        if ~compareMode
-            plot(axA, t, app.normalizeSignal(app.curSignals.aF), 'k');
-            title(axA,'Acceleration');
-            stats = app.computeStats(app.curSignals.aF);
-            txt = sprintf('RMS: %.3f\nMax: %.3f\nMin: %.3f', ...
-                stats.rms, stats.max, stats.min);
+t = app.t;
 
-            annotation(axA.Parent, 'textbox', ...
-                'String', txt, ...
-                'FitBoxToText','on', ...
-                'BackgroundColor',[1 1 1 0.7], ...
-                'EdgeColor','none', ...
-                'Position',[0.75 0.75 0.2 0.2]);       
-                legend(axA, {'Accel'}, 'Location','best');     
-        else
-            plot(axA, t, app.normalizeSignal(app.ASignals.aF), 'k', ...
-                     t, app.normalizeSignal(app.BSignals.aF), 'r');
-            title(axA,'Acceleration (A vs B)');
-            legend(axA,{'A','B'});
-        end
+%% ------------------------------------------------------------------------
+%  3. Clear ONLY the plot area (NOT the entire panel)
+% -------------------------------------------------------------------------
+% Delete only axes, not UI controls
+oldAxes = findall(app.TimeHistoryPanel, 'Type', 'axes');
+delete(oldAxes);
+
+% Delete old tiledlayout objects
+oldTL = findall(app.TimeHistoryPanel, 'Type', 'tiledlayout');
+delete(oldTL);
+
+%% ------------------------------------------------------------------------
+%  4. Create new tiledlayout
+% -------------------------------------------------------------------------
+tl = tiledlayout(app.TimeHistoryPanel, 3, 1, ...
+    'TileSpacing', 'compact', ...
+    'Padding', 'compact');
+
+%% ------------------------------------------------------------------------
+%  5. Plot Acceleration
+% -------------------------------------------------------------------------
+axA = nexttile(tl);
+
+if showA
+    if ~compareMode
+        plot(axA, t, normalizeIfNeeded(app, app.curSignals.aF), 'k');
+        title(axA, 'Acceleration');
+    else
+        plot(axA, t, normalizeIfNeeded(app, app.ASignals.aF), 'k', ...
+                 t, normalizeIfNeeded(app, app.BSignals.aF), 'r');
+        title(axA, 'Acceleration (A vs B)');
+        legend(axA, {'A','B'});
     end
-    ylabel(axA,'Accel');
+end
+ylabel(axA, 'Accel');
 
-    % ---------------- Velocity ----------------
-    axV = nexttile(tl);
-    if showV
-        if ~compareMode
-            plot(axV, t, app.normalizeSignal(app.curSignals.v), 'b');
-            title(axV,'Velocity');
-            stats = app.computeStats(app.curSignals.v);
-            txt = sprintf('RMS: %.3f\nMax: %.3f\nMin: %.3f', ...
-                stats.rms, stats.max, stats.min);
+%% ------------------------------------------------------------------------
+%  6. Plot Velocity
+% -------------------------------------------------------------------------
+axV = nexttile(tl);
 
-            annotation(axV.Parent, 'textbox', ...
-                'String', txt, ...
-                'FitBoxToText','on', ...
-                'BackgroundColor',[1 1 1 0.7], ...
-                'EdgeColor','none', ...
-                'Position',[0.75 0.75 0.2 0.2]);
-                legend(axV, {'Velocity'}, 'Location','best');
-        else
-            plot(axV, t, app.normalizeSignal(app.ASignals.v), 'b', ...
-                     t, app.normalizeSignal(app.BSignals.v), 'm');
-            title(axV,'Velocity (A vs B)');
-            legend(axV,{'A','B'});
-        end
+if showV
+    if ~compareMode
+        plot(axV, t, normalizeIfNeeded(app, app.curSignals.v), 'b');
+        title(axV, 'Velocity');
+    else
+        plot(axV, t, normalizeIfNeeded(app, app.ASignals.v), 'b', ...
+                 t, normalizeIfNeeded(app, app.BSignals.v), 'm');
+        title(axV, 'Velocity (A vs B)');
+        legend(axV, {'A','B'});
     end
-    ylabel(axV,'Velocity');
+end
+ylabel(axV, 'Velocity');
 
-    % ---------------- Displacement ----------------
-    axD = nexttile(tl);
-    if showD
-        if ~compareMode
-            plot(axD, t, app.normalizeSignal(app.curSignals.d), 'r');
-            title(axD,'Displacement');
-            stats = app.computeStats(app.curSignals.d);
-            txt = sprintf('RMS: %.3f\nMax: %.3f\nMin: %.3f', ...
-                stats.rms, stats.max, stats.min);
+%% ------------------------------------------------------------------------
+%  7. Plot Displacement
+% -------------------------------------------------------------------------
+axD = nexttile(tl);
 
-            annotation(axD.Parent, 'textbox', ...
-                'String', txt, ...
-                'FitBoxToText','on', ...
-                'BackgroundColor',[1 1 1 0.7], ...
-                'EdgeColor','none', ...
-                'Position',[0.75 0.75 0.2 0.2]);       
-            legend(axD, {'Displacement'}, 'Location','best');
-     
-        else
-            plot(axD, t, app.normalizeSignal(app.ASignals.d), 'r', ...
-                     t, app.normalizeSignal(app.BSignals.d), 'c');
-            title(axD,'Displacement (A vs B)');
-            legend(axD,{'A','B'});
-        end
+if showD
+    if ~compareMode
+        plot(axD, t, normalizeIfNeeded(app, app.curSignals.d), 'r');
+        title(axD, 'Displacement');
+    else
+        plot(axD, t, normalizeIfNeeded(app, app.ASignals.d), 'r', ...
+                 t, normalizeIfNeeded(app, app.BSignals.d), 'c');
+        title(axD, 'Displacement (A vs B)');
+        legend(axD, {'A','B'});
     end
-    ylabel(axD,'Disp');
-    xlabel(axD,'Time (s)');
+end
+ylabel(axD, 'Disp');
+xlabel(axD, 'Time (s)');
 
-    % Link axes
-    linkaxes([axA axV axD],'x');
+%% ------------------------------------------------------------------------
+%  8. Link axes + enable interactivity
+% -------------------------------------------------------------------------
+linkaxes([axA axV axD], 'x');
+enableDefaultInteractivity(axA);
+enableDefaultInteractivity(axV);
+enableDefaultInteractivity(axD);
 
-    % Enable zoom/pan/cursor interactivity
-    enableDefaultInteractivity(axA);
-    enableDefaultInteractivity(axV);
-    enableDefaultInteractivity(axD);
+end
 
-    % Store handles for cursor readouts, etc.
-    app.TimeAxes.Accel = axA;
-    app.TimeAxes.Vel   = axV;
-    app.TimeAxes.Disp  = axD;
 
+%% ========================================================================
+%  Helper: Normalization wrapper
+% ========================================================================
+function y = normalizeIfNeeded(app, y)
+    if app.NormalizeCheckBox.Value
+        y = y ./ max(abs(y));
+    end
 end

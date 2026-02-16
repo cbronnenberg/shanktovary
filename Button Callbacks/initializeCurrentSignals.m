@@ -18,4 +18,8 @@ function initializeCurrentSignals(app, data)
     app.ASignals = [];
     app.BSignals = [];
 
+    app.StartTimeField.Value = app.t(1);
+    app.EndTimeField.Value   = app.t(end);
+
+
 end

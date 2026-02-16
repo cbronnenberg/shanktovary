@@ -4,6 +4,9 @@ function setCurrentSignalFromIndex(app, idx)
         return;
     end
 
+    raw = app.AccelSignals{idx}; % Convert to in/s^2 for internal processing
+    aF = app.convertAccelUnitsToInternal(raw);
+    
     sig = app.AccelSignals{idx};
     t   = app.t;
 
