@@ -1,10 +1,17 @@
 function reloadWorkspace(app)
 
+
+    if ~isvalid(app); return; end
+
     % 1. Load data from base workspace
     data = app.loadWorkspaceData();
     if isempty(data)
         return;
     end
+
+        % Store on app for later selection
+    app.AccelNames   = data.accelList;
+    app.AccelSignals = data.accelSignals;
 
     % 2. Populate accelerometer table
     app.populateAccelTable(data.accelList);
@@ -19,3 +26,4 @@ function reloadWorkspace(app)
     app.updateTimeHistories();
 
 end
+

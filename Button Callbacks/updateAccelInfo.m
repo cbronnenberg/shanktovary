@@ -5,7 +5,8 @@ function updateAccelInfo(app)
         return;
     end
 
-    name = app.AccelTable.Data{row,2};
+    idx = row(1);  % first selected row
+    name = app.AccelNames{idx};
 
     % Example metadata lookup (customize as needed)
     app.SensitivityField.Value = 100;  % placeholder
