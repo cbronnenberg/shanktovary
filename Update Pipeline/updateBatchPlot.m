@@ -1,73 +1,40 @@
 function updateBatchPlot(app)
+%UPDATEBATCHPLOT  Refresh batch / multi-signal summary plot.
+%
+%   Skeleton aligned with your guards and panel usage.
+%   To be filled with batch FFT/PSD/metric overlays later.
 
-    if ~isvalid(app) || isempty(app.BatchPanel) || ~isvalid(app.BatchPanel)
-        return;
-    end
-
-    parent = app.BatchPanel;
-
-    % Clear graphics
-    kids = parent.Children;
-    for k = 1:numel(kids)
-        if isa(kids(k),'matlab.graphics.Graphics') || isa(kids(k),'matlab.graphics.layout.TiledChartLayout')
-            delete(kids(k));
-        end
-    end
-
-    tl = tiledlayout(parent,1,1);
-    tl.Padding = 'compact';
-    tl.TileSpacing = 'compact';
-
-    ax = nexttile(tl);
-
-    text(ax, 0.5, 0.5, 'Batch processing results will appear here', ...
-        'HorizontalAlignment','center', ...
-        'FontSize',12);
-
-    app.applyPlotStyle(ax, 'Batch Processing', '', '', {});
-
-end
-
-function updateBatchPlot2(app)
-%UPDATEBATCHPLOT  Refresh the batch/waterfall plot.
-
-%% Startup guards
+%% Guards
 if isempty(app) || ~isvalid(app)
     return
 end
 if isempty(app.BatchPanel) || ~isvalid(app.BatchPanel)
     return
 end
-if isempty(app.BatchSignals)
-    return
-end
 
-%% Clear only axes/tiledlayouts
-delete(findall(app.BatchPanel, 'Type', 'axes'));
-delete(findall(app.BatchPanel, 'Type', 'tiledlayout'));
+%% Clear plot area only
+oldAxes = findall(app.BatchPanel, 'Type', 'axes');
+delete(oldAxes);
+oldTL = findall(app.BatchPanel, 'Type', 'tiledlayout');
+delete(oldTL);
 
-%% Create layout
+%% Layout
 tl = tiledlayout(app.BatchPanel, 1, 1, ...
-    'TileSpacing', 'compact', ...
-    'Padding', 'compact');
-
+    'TileSpacing','compact', ...
+    'Padding','compact');
 ax = nexttile(tl);
+hold(ax,'on');
 
-%% Waterfall plot
-hold(ax, 'on');
-colors = lines(numel(app.BatchSignals));
+%% Placeholder: batch overlays
+% Later:
+%   for each selected accel:
+%       sig = processSignal(...)
+%       plot some metric / spectrum
+%
+title(ax, 'Batch Summary (TBD)');
+xlabel(ax, 'Index');
+ylabel(ax, 'Metric');
 
-for k = 1:numel(app.BatchSignals)
-    sig = app.BatchSignals{k};
-    plot(ax, sig.f, sig.Amp + k*app.BatchOffset, ...
-         'Color', colors(k,:));
-end
-
-hold(ax, 'off');
-
-xlabel(ax, 'Frequency (Hz)');
-ylabel(ax, 'Amplitude + Offset');
-title(ax, 'Batch / Waterfall');
-grid(ax, 'on');
+applyPlotStyle(app, ax, '', 'Index', 'Metric', {});
 
 end

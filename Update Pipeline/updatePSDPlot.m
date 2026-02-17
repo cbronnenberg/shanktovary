@@ -1,122 +1,68 @@
 function updatePSDPlot(app)
+%UPDATEPSDPLOT  Safely refresh the PSD plot.
+%
+%   Preserves:
+%       - Startup guards
+%       - Compare mode (A vs B)
+%       - Panel-safe deletion
+%   Uses:
+%       - app.curSignals.aUS
+%       - app.BSignalsProcessed.aUS
+%       - app.PSDPanel
 
-    if ~isvalid(app) || isempty(app.PSDPanel) || ~isvalid(app.PSDPanel)
-        return;
-    end
-
-    parent = app.PSDPanel;
-
-    % Clear graphics
-    kids = parent.Children;
-    for k = 1:numel(kids)
-        if isa(kids(k),'matlab.graphics.Graphics') || isa(kids(k),'matlab.graphics.layout.TiledChartLayout')
-            delete(kids(k));
-        end
-    end
-
-    tl = tiledlayout(parent,3,2);
-    tl.Padding = 'compact';
-    tl.TileSpacing = 'compact';
-
-    t = app.t;
-    fs = 1/mean(diff(t));
-
-    sigA = app.curSignals.aF;
-    sigV = app.curSignals.v;
-    sigD = app.curSignals.d;
-
-    p = app.getFFTParams();
-    window   = p.Window;
-    overlap  = p.OverlapLength;
-    nfft     = p.Nfft;
-
-    % Helper
-    function [f,P,cRMS] = computePSD(x)
-        [P,f] = pwelch(x, window, overlap, nfft, fs);
-        df = f(2)-f(1);
-        cRMS = sqrt(cumsum(P)*df);
-    end
-
-    % --- Accel PSD ---
-    [fA,PA,cA] = computePSD(sigA);
-    ax = nexttile(tl);
-    plot(ax, fA, PA);
-    app.applyPlotStyle(ax, 'Accel PSD', 'Frequency (Hz)', 'PSD', {'Accel'});
-
-    ax = nexttile(tl);
-    plot(ax, fA, cA);
-    app.applyPlotStyle(ax, 'Accel Cumulative RMS', 'Frequency (Hz)', 'RMS', {'Accel'});
-
-    % --- Velocity PSD ---
-    [fV,PV,cV] = computePSD(sigV);
-    ax = nexttile(tl);
-    plot(ax, fV, PV);
-    app.applyPlotStyle(ax, 'Velocity PSD', 'Frequency (Hz)', 'PSD', {'Velocity'});
-
-    ax = nexttile(tl);
-    plot(ax, fV, cV);
-    app.applyPlotStyle(ax, 'Velocity Cumulative RMS', 'Frequency (Hz)', 'RMS', {'Velocity'});
-
-    % --- Displacement PSD ---
-    [fD,PD,cD] = computePSD(sigD);
-    ax = nexttile(tl);
-    plot(ax, fD, PD);
-    app.applyPlotStyle(ax, 'Displacement PSD', 'Frequency (Hz)', 'PSD', {'Displacement'});
-
-    ax = nexttile(tl);
-    plot(ax, fD, cD);
-    app.applyPlotStyle(ax, 'Displacement Cumulative RMS', 'Frequency (Hz)', 'RMS', {'Displacement'});
-
-end
-
-function updatePSDPlot2(app)
-%UPDATEPSDPLOT  Refresh the PSD plot.
-
-%% Startup guards
+%% Guards
 if isempty(app) || ~isvalid(app)
     return
 end
 if isempty(app.PSDPanel) || ~isvalid(app.PSDPanel)
     return
 end
-if isempty(app.curSignals) || isempty(app.curSignals.aF)
+if isempty(app.curSignals)
     return
 end
 
-%% Read UI state
+%% Read state
+t  = app.t;
+fs = 1 / mean(diff(t));
+
 compareMode = app.CompareFiltersCheckBox.Value && ...
-              ~isempty(app.ASignals) && ~isempty(app.BSignals);
+              ~isempty(app.ASignalsProcessed) && ...
+              ~isempty(app.BSignalsProcessed);
 
-%% Clear only axes/tiledlayouts
-delete(findall(app.PSDPanel, 'Type', 'axes'));
-delete(findall(app.PSDPanel, 'Type', 'tiledlayout'));
+%% Clear plot area only
+oldAxes = findall(app.PSDPanel, 'Type', 'axes');
+delete(oldAxes);
+oldTL = findall(app.PSDPanel, 'Type', 'tiledlayout');
+delete(oldTL);
 
-%% Create layout
+%% Layout
 tl = tiledlayout(app.PSDPanel, 1, 1, ...
-    'TileSpacing', 'compact', ...
-    'Padding', 'compact');
-
+    'TileSpacing','compact', ...
+    'Padding','compact');
 ax = nexttile(tl);
+hold(ax,'on');
 
-%% Compute PSD
-fs = app.SampleRate;
+%% Primary (A) PSD
+aUS = app.curSignals.aUS;
 
-if ~compareMode
-    [pxx,f] = pwelch(app.curSignals.aF, [], [], [], fs);
-    plot(ax, f, 10*log10(pxx), 'k');
-    title(ax, 'PSD');
-else
-    [pxxA,fA] = pwelch(app.ASignals.aF, [], [], [], fs);
-    [pxxB,fB] = pwelch(app.BSignals.aF, [], [], [], fs);
-    plot(ax, fA, 10*log10(pxxA), 'k', ...
-             fB, 10*log10(pxxB), 'r');
-    legend(ax, {'A','B'});
-    title(ax, 'PSD (A vs B)');
+win  = hanning(2048);
+nfft = 4096;
+
+[Pxx, f] = pwelch(aUS, win, [], nfft, fs);
+loglog(ax, f, sqrt(Pxx), 'k', 'LineWidth', 1.2);
+
+%% Compare (B) PSD
+if compareMode
+    aUSB = app.BSignalsProcessed.aUS;
+    [PxxB, fB] = pwelch(aUSB, win, [], nfft, fs);
+    loglog(ax, fB, sqrt(PxxB), '--k', 'LineWidth', 1.0);
 end
 
 xlabel(ax, 'Frequency (Hz)');
-ylabel(ax, 'Power/Frequency (dB/Hz)');
-grid(ax, 'on');
-enableDefaultInteractivity(ax);
+ylabel(ax, 'ASD (in/s^2 / sqrt(Hz))');
+title(ax, 'Acceleration PSD');
+xlim(ax, [1 2000]);
+
+applyPlotStyle(app, ax, '', 'Frequency (Hz)', 'ASD', {});
 
 end

@@ -1,94 +1,44 @@
 function updateBandPlot(app)
+%UPDATEBANDPLOT  Refresh band-limited / band summary plot.
+%
+%   This is a skeleton aligned with the new pipeline and your guards.
+%   Fill in band-limited displacement / metrics as we implement them.
 
-    if ~isvalid(app) || isempty(app.BandPanel) || ~isvalid(app.BandPanel)
-        return;
-    end
-
-    parent = app.BandPanel;
-
-    % Clear graphics
-    kids = parent.Children;
-    for k = 1:numel(kids)
-        if isa(kids(k),'matlab.graphics.Graphics') || isa(kids(k),'matlab.graphics.layout.TiledChartLayout')
-            delete(kids(k));
-        end
-    end
-
-    tl = tiledlayout(parent,1,1);
-    tl.Padding = 'compact';
-    tl.TileSpacing = 'compact';
-
-    function updateBandPlot(app)
-
-    if ~isvalid(app) || isempty(app.BandPanel) || ~isvalid(app.BandPanel)
-        return;
-    end
-
-    parent = app.BandPanel;
-
-    % Clear graphics
-    kids = parent.Children;
-    for k = 1:numel(kids)
-        if isa(kids(k),'matlab.graphics.Graphics') || isa(kids(k),'matlab.graphics.layout.TiledChartLayout')
-            delete(kids(k));
-        end
-    end
-
-    tl = tiledlayout(parent,1,1);
-    tl.Padding = 'compact';
-    tl.TileSpacing = 'compact';
-
-    ax = nexttile(tl);
-    hold(ax,'on');
-
-    t = app.t;
-    fs = 1/mean(diff(t));
-    aF = app.curSignals.aF;
-
-    % Example bands
-    bands = [5 10; 10 20; 20 50; 50 200; 200 2000];
-
-    p = app.getFFTParams();
-
-    legendEntries = {};
-
-    for k = 1:size(bands,1)
-        f1 = bands(k,1);
-        f2 = bands(k,2);
-
-        dB = app.bandLimitedDisp(aF, fs, t, f1, f2, p);
-
-        offset = (k-1)*max(abs(dB))*2;
-        plot(ax, t, dB + offset, 'LineWidth',1.1);
-
-        legendEntries{end+1} = sprintf('%d-%d Hz', f1, f2);
-    end
-
-    app.applyPlotStyle(ax, 'Band-Limited Displacement', 'Time (s)', 'Disp + Offset', legendEntries);
-
+%% Guards
+if isempty(app) || ~isvalid(app)
+    return
 end
-nexttile(tl);
-    hold on;
+if isempty(app.BandPanel) || ~isvalid(app.BandPanel)
+    return
+end
+if isempty(app.curSignals)
+    return
+end
 
-    t = app.t;
-    fs = 1/mean(diff(t));
-    aF = app.curSignals.aF;
+%% Clear plot area only
+oldAxes = findall(app.BandPanel, 'Type', 'axes');
+delete(oldAxes);
+oldTL = findall(app.BandPanel, 'Type', 'tiledlayout');
+delete(oldTL);
 
-    bands = [5 10; 10 20; 20 50; 50 200; 200 2000];
+%% Layout
+tl = tiledlayout(app.BandPanel, 1, 1, ...
+    'TileSpacing','compact', ...
+    'Padding','compact');
+ax = nexttile(tl);
+hold(ax,'on');
 
-    for k = 1:size(bands,1)
-        f1 = bands(k,1);
-        f2 = bands(k,2);
+%% Placeholder: band-limited displacement / metrics
+% Here is where we'll later call something like:
+%   bands = app.BandDefinitions;  % e.g., [f1 f2; ...]
+%   metrics = computeBandLimitedMetrics(app, app.curSignals, bands);
+%
+% For now, just leave a stub so nothing breaks.
 
-        dB = app.bandLimitedDisp(aF, fs, t, f1, f2);
-        offset = (k-1)*max(abs(dB))*2;
+title(ax, 'Band-Limited Metrics (TBD)');
+xlabel(ax, 'Band Index');
+ylabel(ax, 'Metric');
 
-        plot(t, dB + offset, 'LineWidth',1.1);
-    end
-
-    xlabel('Time (s)');
-    ylabel('Offset Disp');
-    title('Band-Limited Displacement');
-    grid on;
+applyPlotStyle(app, ax, '', 'Band', 'Metric', {});
 
 end

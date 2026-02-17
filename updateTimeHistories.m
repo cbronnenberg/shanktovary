@@ -1,14 +1,24 @@
 function updateTimeHistories(app)
 %UPDATETIMEHISTORIES  Safely refresh the time‑domain plots in the app.
 %
-%   This version is designed to live OUTSIDE the .mlapp file.
-%   It assumes:
-%       - app.TimeHistoryPanel is a PUBLIC property
-%       - app.ShowAccelCheckBox, ShowVelocityCheckBox, ShowDisplacementCheckBox
-%         are PUBLIC properties
-%       - app.NormalizeCheckBox is PUBLIC
-%       - app.curSignals, app.ASignals, app.BSignals exist
+%   This version merges your original guarded implementation with the
+%   updated processing pipeline (curSignals, ASignalsProcessed,
+%   BSignalsProcessed). It preserves ALL previous functionality:
+%       - Startup guards
+%       - UI state reading
+%       - Compare mode (A vs B)
+%       - Normalization
+%       - Safe deletion of axes only
+%       - Tiled layout recreation
+%       - Axis linking + interactivity
+%
+%   Assumes:
+%       - app.curSignals, app.ASignalsProcessed, app.BSignalsProcessed exist
 %       - app.t exists
+%       - app.ShowAccelCheckBox, ShowVelocityCheckBox, ShowDisplacementCheckBox
+%       - app.NormalizeCheckBox
+%       - app.CompareFiltersCheckBox
+%       - app.TimeHistoryPanel
 
 %% ------------------------------------------------------------------------
 %  1. Startup Guards (prevent early firing)
@@ -26,6 +36,11 @@ if isempty(app.TimeHistoryPanel) || ~isvalid(app.TimeHistoryPanel)
     return
 end
 
+% If no current signal yet, bail
+if isempty(app.curSignals)
+    return
+end
+
 %% ------------------------------------------------------------------------
 %  2. Read UI State
 % -------------------------------------------------------------------------
@@ -34,7 +49,8 @@ showV = app.ShowVelocityCheckBox.Value;
 showD = app.ShowDisplacementCheckBox.Value;
 
 compareMode = app.CompareFiltersCheckBox.Value && ...
-              ~isempty(app.ASignals) && ~isempty(app.BSignals);
+              ~isempty(app.ASignalsProcessed) && ...
+              ~isempty(app.BSignalsProcessed);
 
 t = app.t;
 
@@ -66,8 +82,8 @@ if showA
         plot(axA, t, normalizeIfNeeded(app, app.curSignals.aF), 'k');
         title(axA, 'Acceleration');
     else
-        plot(axA, t, normalizeIfNeeded(app, app.ASignals.aF), 'k', ...
-                 t, normalizeIfNeeded(app, app.BSignals.aF), 'r');
+        plot(axA, t, normalizeIfNeeded(app, app.ASignalsProcessed.aF), 'k', ...
+                 t, normalizeIfNeeded(app, app.BSignalsProcessed.aF), 'r');
         title(axA, 'Acceleration (A vs B)');
         legend(axA, {'A','B'});
     end
@@ -84,8 +100,8 @@ if showV
         plot(axV, t, normalizeIfNeeded(app, app.curSignals.v), 'b');
         title(axV, 'Velocity');
     else
-        plot(axV, t, normalizeIfNeeded(app, app.ASignals.v), 'b', ...
-                 t, normalizeIfNeeded(app, app.BSignals.v), 'm');
+        plot(axV, t, normalizeIfNeeded(app, app.ASignalsProcessed.v), 'b', ...
+                 t, normalizeIfNeeded(app, app.BSignalsProcessed.v), 'm');
         title(axV, 'Velocity (A vs B)');
         legend(axV, {'A','B'});
     end
@@ -102,8 +118,8 @@ if showD
         plot(axD, t, normalizeIfNeeded(app, app.curSignals.d), 'r');
         title(axD, 'Displacement');
     else
-        plot(axD, t, normalizeIfNeeded(app, app.ASignals.d), 'r', ...
-                 t, normalizeIfNeeded(app, app.BSignals.d), 'c');
+        plot(axD, t, normalizeIfNeeded(app, app.ASignalsProcessed.d), 'r', ...
+                 t, normalizeIfNeeded(app, app.BSignalsProcessed.d), 'c');
         title(axD, 'Displacement (A vs B)');
         legend(axD, {'A','B'});
     end
@@ -127,6 +143,9 @@ end
 % ========================================================================
 function y = normalizeIfNeeded(app, y)
     if app.NormalizeCheckBox.Value
-        y = y ./ max(abs(y));
+        m = max(abs(y));
+        if m > 0
+            y = y ./ m;
+        end
     end
 end

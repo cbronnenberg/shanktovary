@@ -1,29 +1,24 @@
 function reloadWorkspace(app)
 % RELOADWORKSPACE
-% Loads variables from the base workspace, detects accelerometer signals,
-% initializes app state, updates UI tables, and refreshes all plots.
+% Loads workspace variables, parses accel_* signals, initializes UI tables,
+% sets current signal, and refreshes all plots.
 
-    % Safety
     if ~isvalid(app)
         return;
     end
 
     % ------------------------------------------------------------
-    % 1. Load workspace variables
+    % 1. Load workspace data (t, accel names, signals, axes)
     % ------------------------------------------------------------
-    data = loadWorkspaceData(app);   % <-- external helper you already have
-    if isempty(data)
+    data = loadWorkspaceData(app);   % external helper
+    if isempty(data) || isempty(data.t)
         return;
     end
-
-    % Expected fields from loadWorkspaceData:
-    %   data.t
-    %   data.accelList
-    %   data.accelSignals
 
     app.t            = data.t(:);
     app.AccelNames   = data.accelList;
     app.AccelSignals = data.accelSignals;
+    app.AccelAxes    = data.accelAxes;
 
     % ------------------------------------------------------------
     % 2. Reset Pair Lists
@@ -35,15 +30,16 @@ function reloadWorkspace(app)
     end
 
     % ------------------------------------------------------------
-    % 3. Populate Accelerometer Table
+    % 3. Populate Accelerometer Table (4 columns)
+    %    Select | Name | Axis | Invert
     % ------------------------------------------------------------
-    populateAccelTable(app, app.AccelNames);   % external helper
+    populateAccelTable(app, app.AccelNames, app.AccelAxes);
 
     % ------------------------------------------------------------
     % 4. Initialize current signal (default = first accel)
     % ------------------------------------------------------------
     if ~isempty(app.AccelSignals)
-        setCurrentSignalFromIndex(app, 1);     % external helper
+        setCurrentSignalFromIndex(app, 1);   % external helper
     end
 
     % ------------------------------------------------------------
@@ -57,11 +53,11 @@ function reloadWorkspace(app)
     % ------------------------------------------------------------
     % 6. Update Accel Info panel
     % ------------------------------------------------------------
-    updateAccelInfo(app);   % external helper
+    updateAccelInfo(app);
 
     % ------------------------------------------------------------
     % 7. Refresh all plots
     % ------------------------------------------------------------
-    refreshAllPlots(app);   % external helper
+    refreshAllPlots(app);
 
 end

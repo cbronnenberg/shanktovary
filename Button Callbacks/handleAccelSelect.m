@@ -1,15 +1,18 @@
 function handleAccelSelect(app, row)
 
-    data = app.AccelTable.Data;
+    raw = app.AccelSignals{row};
+    t   = app.t;
 
-    % If user selects a new row, unselect all others
-    for k = 1:size(data,1)
-        data{k,1} = (k == row);
-    end
+    % Process accel → filtered accel → vel → disp
+    sig = processSignal(app, raw, t);
 
-    app.AccelTable.Data = data;
+    app.curSignals = sig;
 
-    % Update current signal
-    app.setCurrentSignalFromIndex(row);
+    updateAccelInfo(app);
+
+    app.StartTimeField.Value = t(1);
+    app.EndTimeField.Value   = t(end);
+
+    refreshAllPlots(app);
 
 end
