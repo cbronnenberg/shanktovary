@@ -101,4 +101,27 @@ if compareMode
 
     loglog(ax, f, abs(AB), '--k', 'LineWidth', 1.0);
     loglog(ax, f, abs(VB), '--b', 'LineWidth', 1.0);
-    loglog(ax, f, abs
+    loglog(ax, f, abs(DB), '--r', 'LineWidth', 1.0);
+end
+
+%% ------------------------------------------------------------------------
+%  9. Labels, Limits, Legend
+% -------------------------------------------------------------------------
+xlim(ax, [1 2000]);
+xlabel(ax, 'Frequency (Hz)');
+ylabel(ax, 'Magnitude');
+title(ax, 'Spectral Growth Through Integration');
+
+if compareMode
+    legend(ax, {'Accel A','Vel A','Disp A', ...
+                'Accel B','Vel B','Disp B'}, 'Location','best');
+else
+    legend(ax, {'Accel','Vel','Disp'}, 'Location','best');
+end
+
+%% ------------------------------------------------------------------------
+% 10. Apply Styling
+% -------------------------------------------------------------------------
+applyPlotStyle(app, ax, '', 'Frequency (Hz)', 'Magnitude', {});
+
+end
