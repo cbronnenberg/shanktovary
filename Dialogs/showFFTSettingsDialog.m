@@ -1,72 +1,112 @@
 function showFFTSettingsDialog(app)
+%SHOWFFTSETTINGSDIALOG  Modal dialog for FFT/PSD settings.
+%
+%   Updated to use the FFT dropdown and maintain helper function usage.
 
-    % Create modal dialog
-    d = uifigure('Name','FFT / PSD Settings', ...
-                 'WindowStyle','modal', ...
-                 'Position',[100 100 360 260]);
+%% ------------------------------------------------------------------------
+%  1. Create modal dialog
+% -------------------------------------------------------------------------
+d = uifigure('Name','FFT / PSD Settings', ...
+             'WindowStyle','modal', ...
+             'Position',[100 100 380 300]);
 
-    gl = uigridlayout(d, [5 2]);
-    gl.RowHeight = {30,30,30,30,'1x'};
-    gl.ColumnWidth = {'1x','1x'};
-    gl.Padding = [10 10 10 10];
-    gl.RowSpacing = 8;
+%% ------------------------------------------------------------------------
+%  2. FFT Length (Dropdown)
+% -------------------------------------------------------------------------
+uilabel(d, 'Text','FFT Length:', ...
+           'Position',[20 240 120 22]);
 
-    % --- FFT Length Dropdown ---
-    uilabel(gl, 'Text','FFT Length:');
-    nfftDD = uidropdown(gl, ...
-        'Items', {'512','1024','2048','4096','8192','16384','32768','65536'}, ...
-        'Value', num2str(app.Nfft));
+fftDrop = uidropdown(d, ...
+    'Items', {'1024','2048','4096','8192','16384'}, ...
+    'Position',[150 240 120 22]);
 
-    % --- Window Percentage ---
-    uilabel(gl, 'Text','Window (% of Nfft):');
-    winField = uieditfield(gl, 'numeric', ...
-        'Limits',[1 100], ...
-        'Value', app.WindowPct);
+% Preselect current value
+if isprop(app,'NfftDropDown') && isvalid(app.NfftDropDown)
+    fftDrop.Value = app.NfftDropDown.Value;
+else
+    fftDrop.Value = num2str(app.Nfft);
+end
 
-    % --- Overlap Percentage ---
-    uilabel(gl, 'Text','Overlap (% of Window):');
-    ovField = uieditfield(gl, 'numeric', ...
-        'Limits',[0 99], ...
-        'Value', app.OverlapPct);
+%% ------------------------------------------------------------------------
+%  3. Window Percentage
+% -------------------------------------------------------------------------
+uilabel(d,'Text','Window %:', ...
+          'Position',[20 200 120 22]);
 
-    % --- Window Type (optional) ---
-    uilabel(gl, 'Text','Window Type:');
-    winTypeDD = uidropdown(gl, ...
-        'Items', {'Hamming','Hann','Blackman','FlatTop'}, ...
-        'Value', app.WindowType);
+winField = uieditfield(d,'numeric', ...
+    'Limits',[0 100], ...
+    'Value', app.WindowPct, ...
+    'Position',[150 200 120 22]);
 
-    % --- Buttons ---
-    okBtn = uibutton(gl, 'Text','OK', ...
-        'ButtonPushedFcn', @(~,~) onOK());
-    cancelBtn = uibutton(gl, 'Text','Cancel', ...
-        'ButtonPushedFcn', @(~,~) delete(d));
+%% ------------------------------------------------------------------------
+%  4. Overlap Percentage
+% -------------------------------------------------------------------------
+uilabel(d,'Text','Overlap %:', ...
+          'Position',[20 160 120 22]);
 
-    okBtn.Layout.Row = 5; okBtn.Layout.Column = 1;
-    cancelBtn.Layout.Row = 5; cancelBtn.Layout.Column = 2;
+ovField = uieditfield(d,'numeric', ...
+    'Limits',[0 99], ...
+    'Value', app.OverlapPct, ...
+    'Position',[150 160 120 22]);
 
-    % ------------------------------------------------------------
-    % OK BUTTON CALLBACK
-    % ------------------------------------------------------------
+%% ------------------------------------------------------------------------
+%  5. Window Type
+% -------------------------------------------------------------------------
+uilabel(d,'Text','Window Type:', ...
+          'Position',[20 120 120 22]);
+
+winTypeDrop = uidropdown(d, ...
+    'Items', {'Hann','Hamming','Blackman','Rectangular'}, ...
+    'Value', app.WindowType, ...
+    'Position',[150 120 120 22]);
+
+%% ------------------------------------------------------------------------
+%  6. Reset to Defaults
+% -------------------------------------------------------------------------
+uibutton(d,'Text','Reset Defaults', ...
+    'Position',[20 60 120 30], ...
+    'ButtonPushedFcn', @(~,~) resetDefaults());
+
+    function resetDefaults()
+        fftDrop.Value = '8192';
+        winField.Value = 50;
+        ovField.Value = 50;
+        winTypeDrop.Value = 'Hann';
+    end
+
+%% ------------------------------------------------------------------------
+%  7. OK / Cancel Buttons
+% -------------------------------------------------------------------------
+uibutton(d,'Text','Cancel', ...
+    'Position',[60 20 100 30], ...
+    'ButtonPushedFcn', @(~,~) close(d));
+
+uibutton(d,'Text','OK', ...
+    'Position',[180 20 100 30], ...
+    'ButtonPushedFcn', @(~,~) onOK());
+
+%% ------------------------------------------------------------------------
+%  8. OK Callback
+% -------------------------------------------------------------------------
     function onOK()
 
-        % Update app properties
-        app.Nfft        = str2double(nfftDD.Value);
+        % Update FFT length dropdown in main app
+        if isprop(app,'NfftDropDown') && isvalid(app.NfftDropDown)
+            app.NfftDropDown.Value = fftDrop.Value;
+        end
+
+        % Update fallback property
+        app.Nfft = str2double(fftDrop.Value);
+
+        % Update window settings
         app.WindowPct   = winField.Value;
         app.OverlapPct  = ovField.Value;
-        app.WindowType  = winTypeDD.Value;
+        app.WindowType  = winTypeDrop.Value;
 
-        % Derived parameters
-        app.WindowLength  = round(app.WindowPct/100 * app.Nfft);
-        app.OverlapLength = round(app.OverlapPct/100 * app.WindowLength);
+        % Refresh plots
+        refreshAllPlots(app);
 
-        % Refresh all spectral plots
-        app.updateFFTPlot();
-        app.updatePSDPlot();
-        app.updateSpectrogramPlot();
-        app.updateBandPlot();
-
-        delete(d);
+        close(d);
     end
 
 end
-
