@@ -1,0 +1,106 @@
+function showFilterSettingsDialog(app)
+%SHOWFILTERSETTINGSDIALOG  Modal dialog for filtering settings.
+%
+%   Creates:
+%       - Detrend toggle
+%       - Taper toggle
+%       - Highpass toggle + freq + order
+%       - Lowpass toggle + freq + order
+%       - Reset / OK / Cancel
+%
+%   Updates:
+%       - app.DetrendEnabled
+%       - app.TaperEnabled
+%       - app.HighpassEnabled
+%       - app.LowpassEnabled
+%       - app.HighpassFreq
+%       - app.LowpassFreq
+%       - app.HighpassOrder
+%       - app.LowpassOrder
+%
+%   Calls refreshAllPlots(app) on OK.
+
+%% ------------------------------------------------------------------------
+%  1. Create modal dialog
+% -------------------------------------------------------------------------
+d = uifigure('Name','Filter Settings', ...
+             'WindowStyle','modal', ...
+             'Position',[100 100 420 360]);
+
+%% ------------------------------------------------------------------------
+%  2. Detrend
+% -------------------------------------------------------------------------
+DetrendCheckBox = uicheckbox(d, ...
+    'Text','Detrend', ...
+    'Value', app.DetrendEnabled, ...
+    'Position',[20 300 120 22]);
+
+%% ------------------------------------------------------------------------
+%  3. Taper
+% -------------------------------------------------------------------------
+TaperCheckBox = uicheckbox(d, ...
+    'Text','Taper (5%)', ...
+    'Value', app.TaperEnabled, ...
+    'Position',[20 260 120 22]);
+
+%% ------------------------------------------------------------------------
+%  4. Highpass
+% -------------------------------------------------------------------------
+HighpassCheckBox = uicheckbox(d, ...
+    'Text','Highpass', ...
+    'Value', app.HighpassEnabled, ...
+    'Position',[20 220 120 22]);
+
+uilabel(d,'Text','HP Freq (Hz):', ...
+          'Position',[160 220 100 22]);
+
+HighpassFreqField = uieditfield(d,'numeric', ...
+    'Limits',[0 Inf], ...
+    'Value', app.HighpassFreq, ...
+    'Position',[260 220 80 22]);
+
+uilabel(d,'Text','HP Order:', ...
+          'Position',[160 190 100 22]);
+
+HighpassOrderField = uieditfield(d,'numeric', ...
+    'Limits',[1 10], ...
+    'Value', app.HighpassOrder, ...
+    'Position',[260 190 80 22]);
+
+%% ------------------------------------------------------------------------
+%  5. Lowpass
+% -------------------------------------------------------------------------
+LowpassCheckBox = uicheckbox(d, ...
+    'Text','Lowpass', ...
+    'Value', app.LowpassEnabled, ...
+    'Position',[20 150 120 22]);
+
+uilabel(d,'Text','LP Freq (Hz):', ...
+          'Position',[160 150 100 22]);
+
+LowpassFreqField = uieditfield(d,'numeric', ...
+    'Limits',[0 Inf], ...
+    'Value', app.LowpassFreq, ...
+    'Position',[260 150 80 22]);
+
+uilabel(d,'Text','LP Order:', ...
+          'Position',[160 120 100 22]);
+
+LowpassOrderField = uieditfield(d,'numeric', ...
+    'Limits',[1 10], ...
+    'Value', app.LowpassOrder, ...
+    'Position',[260 120 80 22]);
+
+%% ------------------------------------------------------------------------
+%  6. Reset Defaults
+% -------------------------------------------------------------------------
+uibutton(d,'Text','Reset Defaults', ...
+    'Position',[20 60 120 30], ...
+    'ButtonPushedFcn', @(~,~) resetDefaults());
+
+    function resetDefaults()
+        DetrendCheckBox.Value = false;
+        TaperCheckBox.Value = false;
+
+        HighpassCheckBox.Value = false;
+        Highpass
