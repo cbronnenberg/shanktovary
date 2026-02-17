@@ -1,33 +1,31 @@
 function applyTimeSegment(app)
-if isempty(app.EndTimeField.Value)
-    app.EndTimeField.Value = app.t(end);
+%APPLYTIMESEGMENT  Slice current signal using Start/End fields and update app.curSignals.
+
+    if isempty(app.curSignals) || isempty(app.t)
+        return
+    end
+
+    t = app.t(:);
+    tStart = app.StartTimeField.Value;
+    tEnd   = app.EndTimeField.Value;
+
+    % Clamp
+    tStart = max(tStart, t(1));
+    tEnd   = min(tEnd,   t(end));
+
+    idx = (t >= tStart) & (t <= tEnd);
+
+    % Slice
+    sig = app.curSignals;
+    sig.aUS = sig.aUS(idx);
+    sig.aF  = sig.aF(idx);
+    sig.v   = sig.v(idx);
+    sig.d   = sig.d(idx);
+    sig.t   = t(idx);
+
+    % Update app state
+    app.curSignals = sig;
+
+    % Refresh plots
+    refreshAllPlots(app);
 end
-
-% Read start/end times from UI
-tStart = app.StartTimeField.Value;
-tEnd   = app.EndTimeField.Value;
-
-% Validate
-if tStart >= tEnd
-    uialert(app.UIFigure, 'Start time must be less than end time.', 'Invalid Range');
-    return;
-end
-
-% Slice the time vector
-idx = app.TimeVector >= tStart & app.TimeVector <= tEnd;
-
-app.SegTimeVector = app.TimeVector(idx);
-
-% Slice each selected accelerometer signal
-for k = 1:numel(app.SelectedSignals)
-    sig = app.SelectedSignals{k};
-    app.SegSignals{k} = sig(idx);
-end
-
-% Trigger the update pipeline
-app.updateTimePlot();
-app.updateFFTPlot();
-app.updateSpectrogramPlot();
-end
-
-% app.ApplySegmentButton.ButtonPushedFcn = @(~,~) app.applyTimeSegment();

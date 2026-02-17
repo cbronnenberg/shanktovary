@@ -1,42 +1,30 @@
 function updateTimeHistories(app)
 %UPDATETIMEHISTORIES  Safely refresh the time‑domain plots in the app.
 %
-%   This version merges your original guarded implementation with the
-%   updated processing pipeline (curSignals, ASignalsProcessed,
-%   BSignalsProcessed). It preserves ALL previous functionality:
+%   Merged version:
 %       - Startup guards
 %       - UI state reading
 %       - Compare mode (A vs B)
 %       - Normalization
+%       - Time‑segment support (uses sig.t)
+%       - Accel name in titles
+%       - Statistics overlay (RMS / max / min)
 %       - Safe deletion of axes only
 %       - Tiled layout recreation
 %       - Axis linking + interactivity
-%
-%   Assumes:
-%       - app.curSignals, app.ASignalsProcessed, app.BSignalsProcessed exist
-%       - app.t exists
-%       - app.ShowAccelCheckBox, ShowVelocityCheckBox, ShowDisplacementCheckBox
-%       - app.NormalizeCheckBox
-%       - app.CompareFiltersCheckBox
-%       - app.TimeHistoryPanel
 
 %% ------------------------------------------------------------------------
-%  1. Startup Guards (prevent early firing)
+%  1. Startup Guards
 % -------------------------------------------------------------------------
 if isempty(app) || ~isvalid(app)
     return
 end
-
-% If UI controls are not yet created, bail out
 if isempty(app.ShowAccelCheckBox) || ~isvalid(app.ShowAccelCheckBox)
     return
 end
-
 if isempty(app.TimeHistoryPanel) || ~isvalid(app.TimeHistoryPanel)
     return
 end
-
-% If no current signal yet, bail
 if isempty(app.curSignals)
     return
 end
@@ -52,18 +40,14 @@ compareMode = app.CompareFiltersCheckBox.Value && ...
               ~isempty(app.ASignalsProcessed) && ...
               ~isempty(app.BSignalsProcessed);
 
-t = app.t;
+% Use segmented time vector
+t = app.curSignals.t;
 
 %% ------------------------------------------------------------------------
-%  3. Clear ONLY the plot area (NOT the entire panel)
+%  3. Clear ONLY the plot area
 % -------------------------------------------------------------------------
-% Delete only axes, not UI controls
-oldAxes = findall(app.TimeHistoryPanel, 'Type', 'axes');
-delete(oldAxes);
-
-% Delete old tiledlayout objects
-oldTL = findall(app.TimeHistoryPanel, 'Type', 'tiledlayout');
-delete(oldTL);
+delete(findall(app.TimeHistoryPanel, 'Type', 'axes'));
+delete(findall(app.TimeHistoryPanel, 'Type', 'tiledlayout'));
 
 %% ------------------------------------------------------------------------
 %  4. Create new tiledlayout
@@ -73,6 +57,15 @@ tl = tiledlayout(app.TimeHistoryPanel, 3, 1, ...
     'Padding', 'compact');
 
 %% ------------------------------------------------------------------------
+%  Determine accel name for titles
+% -------------------------------------------------------------------------
+row = app.AccelTable.Selection;
+if isempty(row)
+    row = 1;
+end
+accelName = app.AccelNames{row};
+
+%% ------------------------------------------------------------------------
 %  5. Plot Acceleration
 % -------------------------------------------------------------------------
 axA = nexttile(tl);
@@ -80,15 +73,16 @@ axA = nexttile(tl);
 if showA
     if ~compareMode
         plot(axA, t, normalizeIfNeeded(app, app.curSignals.aF), 'k');
-        title(axA, 'Acceleration');
+        title(axA, sprintf('Acceleration — %s', accelName));
     else
         plot(axA, t, normalizeIfNeeded(app, app.ASignalsProcessed.aF), 'k', ...
                  t, normalizeIfNeeded(app, app.BSignalsProcessed.aF), 'r');
-        title(axA, 'Acceleration (A vs B)');
+        title(axA, sprintf('Acceleration (A vs B) — %s', accelName));
         legend(axA, {'A','B'});
     end
 end
 ylabel(axA, 'Accel');
+addStatsOverlay(axA, t, app.curSignals.aF);
 
 %% ------------------------------------------------------------------------
 %  6. Plot Velocity
@@ -98,15 +92,16 @@ axV = nexttile(tl);
 if showV
     if ~compareMode
         plot(axV, t, normalizeIfNeeded(app, app.curSignals.v), 'b');
-        title(axV, 'Velocity');
+        title(axV, sprintf('Velocity — %s', accelName));
     else
         plot(axV, t, normalizeIfNeeded(app, app.ASignalsProcessed.v), 'b', ...
                  t, normalizeIfNeeded(app, app.BSignalsProcessed.v), 'm');
-        title(axV, 'Velocity (A vs B)');
+        title(axV, sprintf('Velocity (A vs B) — %s', accelName));
         legend(axV, {'A','B'});
     end
 end
 ylabel(axV, 'Velocity');
+addStatsOverlay(axV, t, app.curSignals.v);
 
 %% ------------------------------------------------------------------------
 %  7. Plot Displacement
@@ -116,16 +111,17 @@ axD = nexttile(tl);
 if showD
     if ~compareMode
         plot(axD, t, normalizeIfNeeded(app, app.curSignals.d), 'r');
-        title(axD, 'Displacement');
+        title(axD, sprintf('Displacement — %s', accelName));
     else
         plot(axD, t, normalizeIfNeeded(app, app.ASignalsProcessed.d), 'r', ...
                  t, normalizeIfNeeded(app, app.BSignalsProcessed.d), 'c');
-        title(axD, 'Displacement (A vs B)');
+        title(axD, sprintf('Displacement (A vs B) — %s', accelName));
         legend(axD, {'A','B'});
     end
 end
 ylabel(axD, 'Disp');
 xlabel(axD, 'Time (s)');
+addStatsOverlay(axD, t, app.curSignals.d);
 
 %% ------------------------------------------------------------------------
 %  8. Link axes + enable interactivity
@@ -148,4 +144,32 @@ function y = normalizeIfNeeded(app, y)
             y = y ./ m;
         end
     end
+end
+
+
+%% ========================================================================
+%  Helper: Statistics overlay
+% ========================================================================
+function addStatsOverlay(ax, t, x)
+    if isempty(x)
+        return
+    end
+
+    rmsVal = sqrt(mean(x.^2));
+    maxVal = max(x);
+    minVal = min(x);
+
+    txt = sprintf('RMS: %.3g\nMax: %.3g\nMin: %.3g', ...
+        rmsVal, maxVal, minVal);
+
+    delete(findall(ax,'Tag','StatsOverlay'));
+
+    text(ax, 0.02, 0.95, txt, ...
+        'Units','normalized', ...
+        'HorizontalAlignment','left', ...
+        'VerticalAlignment','top', ...
+        'FontSize', 9, ...
+        'BackgroundColor',[1 1 1 0.6], ...
+        'EdgeColor','none', ...
+        'Tag','StatsOverlay');
 end
